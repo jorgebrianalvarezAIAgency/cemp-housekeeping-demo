@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clínica CEMP · Control de Housekeeping</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EAF0F6; --bg-grad:#E2EBF3;
+  --surface:#FFFFFF; --surface-2:#F6F9FC; --surface-3:#EEF3F9;
+  --border:#E0E8F1; --border-strong:#C9D6E4;
+  --ink:#13202F; --ink-2:#4C5D72; --ink-3:#8493A6; --ink-4:#A9B6C6;
+  --cemp:#1C7FBE; --cemp-deep:#135C8C; --cemp-light:#5BA8D6; --cemp-wash:#E6F1FA;
+  --ocupada:#5C7C9E;  --ocupada-w:#EAF0F6;
+  --egreso:#EF8A3C;   --egreso-w:#FDF1E6;
+  --limpieza:#149FB8; --limpieza-w:#E2F5F8;
+  --lista:#23A368;    --lista-w:#E4F6ED;
+  --mant:#94A0B0;     --mant-w:#EFF2F6;
+  --aisla:#DE4A45;    --aisla-w:#FCEAE9;
+  --uci:#C0573B;      --uci-w:#FBEDE7;
+  --shadow-sm:0 1px 2px rgba(20,40,70,.05), 0 1px 3px rgba(20,40,70,.04);
+  --shadow-md:0 4px 14px rgba(20,50,90,.07), 0 2px 5px rgba(20,50,90,.05);
+  --shadow-lg:0 18px 50px rgba(16,45,86,.16), 0 6px 18px rgba(16,45,86,.10);
+  --r:14px; --r-sm:10px;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%;}
+body{
+  font-family:'Hanken Grotesk',system-ui,sans-serif; color:var(--ink); font-size:14px; line-height:1.5;
+  background:
+    radial-gradient(1200px 600px at 85% -10%, #F2F7FC 0%, transparent 60%),
+    radial-gradient(900px 500px at -5% 110%, #E7F0F9 0%, transparent 55%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-grad) 100%);
+  background-attachment:fixed; -webkit-font-smoothing:antialiased; min-height:100vh;
+}
+h1,h2,h3,h4,.display{ font-family:'Bricolage Grotesque','Hanken Grotesk',sans-serif; letter-spacing:-.015em; }
+.mono{ font-family:'IBM Plex Mono',monospace; font-feature-settings:"tnum"; }
+button{ font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; }
+::-webkit-scrollbar{ width:10px; height:10px; }
+::-webkit-scrollbar-thumb{ background:#CBD7E4; border-radius:20px; border:2px solid transparent; background-clip:content-box; }
+::-webkit-scrollbar-thumb:hover{ background:#AFC0D2; background-clip:content-box; }
+
+/* ============ TOP BAR ============ */
+.topbar{ position:sticky; top:0; z-index:40; display:flex; align-items:center; justify-content:space-between;
+  padding:0 26px; height:66px; background:rgba(255,255,255,.82); backdrop-filter:blur(14px); border-bottom:1px solid var(--border); }
+.brand{ display:flex; align-items:center; gap:13px; }
+.brand .mark{ width:42px; height:42px; flex:none; }
+.brand .wm{ line-height:1; }
+.brand .wm .sup{ font-size:10px; letter-spacing:.32em; text-transform:uppercase; color:var(--ink-3); font-weight:600; display:block; margin-bottom:2px;}
+.brand .wm .nm{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:24px; color:var(--cemp); letter-spacing:-.02em; }
+.brand .div{ width:1px; height:30px; background:var(--border-strong); margin:0 4px; }
+.brand .modtag{ font-size:12px; color:var(--ink-2); font-weight:600; }
+.brand .modtag b{ color:var(--ink); }
+.topright{ display:flex; align-items:center; gap:18px; }
+.turno{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink-2); }
+.turno .dot{ width:7px; height:7px; border-radius:50%; background:var(--lista); box-shadow:0 0 0 4px var(--lista-w); }
+.turno b{ color:var(--ink); font-weight:600; }
+.live{ display:flex; align-items:center; gap:7px; font-size:11px; font-weight:700; letter-spacing:.12em; color:var(--aisla); background:var(--aisla-w); padding:6px 11px; border-radius:30px; }
+.live .pulse{ width:8px; height:8px; border-radius:50%; background:var(--aisla); animation:pulse 1.6s infinite; }
+@keyframes pulse{ 0%{box-shadow:0 0 0 0 rgba(222,74,69,.5);} 70%{box-shadow:0 0 0 7px rgba(222,74,69,0);} 100%{box-shadow:0 0 0 0 rgba(222,74,69,0);} }
+.clock{ text-align:right; }
+.clock .t{ font-family:'IBM Plex Mono'; font-size:22px; font-weight:600; letter-spacing:.02em; color:var(--ink); line-height:1; }
+.clock .d{ font-size:11px; color:var(--ink-3); margin-top:2px; text-transform:capitalize; }
+
+/* ============ TABS ============ */
+.tabwrap{ display:flex; justify-content:center; padding:16px 26px 0; }
+.tabs{ display:inline-flex; background:var(--surface); border:1px solid var(--border); border-radius:30px; padding:5px; gap:3px; box-shadow:var(--shadow-sm); }
+.tab{ display:flex; align-items:center; gap:8px; padding:9px 18px; border-radius:24px; font-size:13.5px; font-weight:600; color:var(--ink-2); transition:all .18s ease; white-space:nowrap; }
+.tab svg{ width:17px; height:17px; }
+.tab:hover{ color:var(--ink); background:var(--surface-3); }
+.tab.active{ background:var(--cemp); color:#fff; box-shadow:0 4px 12px rgba(28,127,190,.32); }
+
+/* ============ LAYOUT ============ */
+.view{ display:none; padding:22px 26px 40px; max-width:1640px; margin:0 auto; }
+.view.active{ display:block; animation:fade .35s ease; }
+@keyframes fade{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+
+/* ---- Tablero ---- */
+.board{ display:grid; grid-template-columns:240px 1fr; gap:22px; align-items:start; }
+.rail{ position:sticky; top:96px; display:flex; flex-direction:column; gap:16px; }
+.panel{ background:var(--surface); border:1px solid var(--border); border-radius:var(--r); box-shadow:var(--shadow-sm); }
+.panel .ph{ padding:14px 16px 10px; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); }
+.legend{ padding:2px 14px 14px; }
+.lg{ display:flex; align-items:center; gap:10px; padding:7px 4px; font-size:13px; color:var(--ink-2); border-radius:8px; }
+.lg .sw{ width:13px; height:13px; border-radius:4px; flex:none; }
+.lg .ct{ margin-left:auto; font-family:'IBM Plex Mono'; font-size:12px; font-weight:600; color:var(--ink); }
+.lg.special{ border-top:1px dashed var(--border); margin-top:5px; padding-top:11px; }
+.lg.special .sw{ background:var(--surface); border:2px solid var(--aisla); }
+
+.floorfilter{ padding:6px 12px 14px; display:flex; flex-direction:column; gap:4px; }
+.ff{ display:flex; align-items:center; gap:9px; padding:9px 12px; border-radius:9px; font-size:13px; font-weight:600; color:var(--ink-2); transition:.15s; text-align:left; width:100%; }
+.ff:hover{ background:var(--surface-3); }
+.ff.active{ background:var(--cemp-wash); color:var(--cemp-deep); }
+.ff .n{ margin-left:auto; font-family:'IBM Plex Mono'; font-size:11.5px; color:var(--ink-3); }
+
+.summary{ padding:6px 14px 16px; }
+.sumrow{ display:flex; align-items:baseline; justify-content:space-between; padding:7px 2px; border-bottom:1px dashed var(--border); }
+.sumrow:last-child{ border-bottom:none; }
+.sumrow .l{ font-size:12.5px; color:var(--ink-2); }
+.sumrow .v{ font-family:'IBM Plex Mono'; font-weight:600; font-size:15px; }
+
+/* ---- room/bed grid ---- */
+.boardmain{ min-width:0; }
+.alertbar{ display:flex; align-items:center; gap:12px; background:linear-gradient(90deg,var(--aisla-w),#fff);
+  border:1px solid #F3C9C7; border-left:4px solid var(--aisla); border-radius:var(--r); padding:13px 18px; margin-bottom:18px; box-shadow:var(--shadow-sm); }
+.alertbar .ico{ width:34px; height:34px; border-radius:9px; background:var(--aisla); color:#fff; display:grid; place-items:center; flex:none; }
+.alertbar .ico svg{ width:18px; height:18px; }
+.alertbar .tx{ font-size:13px; color:var(--ink-2); }
+.alertbar .tx b{ color:var(--aisla); font-weight:700; }
+.alertbar.hide{ display:none; }
+
+.sector{ margin-bottom:26px; }
+.sector-h{ display:flex; align-items:center; gap:12px; margin-bottom:13px; }
+.sector-h .ttl{ font-family:'Bricolage Grotesque'; font-weight:700; font-size:16px; color:var(--ink); }
+.sector-h .fl{ font-size:11px; font-weight:600; color:var(--cemp-deep); background:var(--cemp-wash); padding:3px 9px; border-radius:20px; }
+.sector-h .line{ flex:1; height:1px; background:var(--border); }
+.sector-h .cnt{ font-family:'IBM Plex Mono'; font-size:12px; color:var(--ink-3); }
+
+.units{ display:grid; grid-template-columns:repeat(auto-fill,minmax(238px,1fr)); gap:13px; }
+.unit{ background:var(--surface); border:1px solid var(--border); border-radius:var(--r); box-shadow:var(--shadow-sm); padding:12px 12px 11px; }
+.unit-h{ display:flex; align-items:center; gap:8px; margin-bottom:10px; padding:0 2px; }
+.unit-h .uid{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:16px; letter-spacing:-.02em; }
+.unit-h .utag{ font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; padding:2px 7px; border-radius:5px; }
+.utag.doble{ background:var(--cemp-wash); color:var(--cemp-deep); }
+.utag.uci{ background:var(--uci-w); color:var(--uci); }
+.utag.uti{ background:#EDE9FB; color:#6A4FC0; }
+.utag.guardia{ background:var(--egreso-w); color:#C56A1E; }
+.utag.piso{ background:var(--surface-3); color:var(--ink-2); }
+.unit-h .umeta{ margin-left:auto; font-size:10px; color:var(--ink-4); }
+.unit-beds{ display:flex; gap:8px; }
+.bed{ flex:1; min-width:0; position:relative; background:var(--st-w); border:1px solid var(--border); border-left:3px solid var(--st);
+  border-radius:9px; padding:9px 10px; cursor:pointer; transition:transform .14s ease, box-shadow .14s ease; }
+.bed:hover{ transform:translateY(-2px); box-shadow:var(--shadow-md); }
+.bed.aisla{ box-shadow:0 0 0 1.5px var(--aisla) inset; }
+.bed .btop{ display:flex; align-items:center; justify-content:space-between; gap:6px; }
+.bed .blab{ font-size:11px; font-weight:700; color:var(--ink); white-space:nowrap; }
+.bed .blab small{ font-family:'IBM Plex Mono'; font-size:9px; color:var(--ink-3); font-weight:500; display:block; margin-top:1px; }
+.bed .bbadge{ font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; padding:1px 5px; border-radius:4px; flex:none; }
+.bed .bbadge.urg{ background:var(--aisla); color:#fff; }
+.bed .bbadge.ais{ background:#fff; color:var(--aisla); border:1px solid #F0C3C1; }
+.bed .bstate{ display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; color:var(--st); margin-top:8px; }
+.bed .bstate .d{ width:6px; height:6px; border-radius:50%; background:var(--st); }
+.bed .bfoot{ display:flex; align-items:center; justify-content:space-between; gap:6px; margin-top:8px; padding-top:7px; border-top:1px solid rgba(0,0,0,.04); }
+.bed .bwho{ font-size:10px; color:var(--ink-2); display:flex; align-items:center; gap:5px; overflow:hidden; }
+.bed .bwho .av{ width:16px; height:16px; border-radius:50%; background:#fff; color:var(--cemp-deep); font-size:8px; font-weight:700; display:grid; place-items:center; flex:none; border:1px solid var(--border); }
+.bed .bwho span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.bed .btimer{ font-family:'IBM Plex Mono'; font-size:10px; font-weight:600; color:var(--ink-3); flex:none; }
+.bed .btimer.warn{ color:var(--egreso); } .bed .btimer.bad{ color:var(--aisla); }
+
+/* ============ KPIs ============ */
+.kgrid{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:18px; }
+.kpi{ background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:18px 20px; box-shadow:var(--shadow-sm); position:relative; overflow:hidden;}
+.kpi .kl{ font-size:12px; color:var(--ink-3); font-weight:600; display:flex; align-items:center; gap:7px; }
+.kpi .kl .ic{ width:26px; height:26px; border-radius:8px; display:grid; place-items:center; background:var(--cemp-wash); color:var(--cemp); }
+.kpi .kl .ic svg{ width:15px; height:15px; }
+.kpi .kv{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:36px; margin-top:12px; letter-spacing:-.03em; line-height:1; }
+.kpi .kv small{ font-size:16px; font-weight:600; color:var(--ink-3); }
+.kpi .kt{ display:flex; align-items:center; gap:5px; font-size:11.5px; margin-top:8px; font-weight:600; }
+.kpi .kt .up{ color:var(--lista); } .kpi .kt .down{ color:var(--aisla); } .kpi .kt .neu{ color:var(--ink-3); }
+
+.krow2{ display:grid; grid-template-columns:1.4fr 1fr; gap:16px; margin-bottom:16px; }
+.card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--r); box-shadow:var(--shadow-sm); }
+.card-h{ display:flex; align-items:center; justify-content:space-between; padding:17px 20px 4px; }
+.card-h .ct{ font-family:'Bricolage Grotesque'; font-weight:700; font-size:15.5px; }
+.card-h .cs{ font-size:11.5px; color:var(--ink-3); }
+.card-b{ padding:14px 20px 20px; }
+
+.barchart{ display:flex; align-items:flex-end; gap:18px; height:170px; padding-top:10px; }
+.bc-col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; height:100%; justify-content:flex-end; }
+.bc-bars{ width:100%; display:flex; gap:5px; align-items:flex-end; height:100%; justify-content:center; }
+.bc-bar{ width:16px; border-radius:5px 5px 2px 2px; background:linear-gradient(180deg,var(--cemp-light),var(--cemp)); transition:height .5s ease; }
+.bc-x{ font-size:11px; color:var(--ink-3); font-weight:600; }
+.bc-v{ font-family:'IBM Plex Mono'; font-size:11px; font-weight:600; color:var(--ink); }
+
+.prod-list{ display:flex; flex-direction:column; gap:13px; }
+.prod{ display:grid; grid-template-columns:30px 1fr auto; align-items:center; gap:12px; }
+.prod .av{ width:30px; height:30px; border-radius:50%; background:var(--cemp); color:#fff; font-size:11px; font-weight:700; display:grid; place-items:center; }
+.prod .meta .nm{ font-size:13px; font-weight:600; }
+.prod .meta .sub{ font-size:11px; color:var(--ink-3); }
+.prod .bar{ grid-column:2; height:6px; background:var(--surface-3); border-radius:10px; margin-top:6px; overflow:hidden; }
+.prod .bar i{ display:block; height:100%; border-radius:10px; background:linear-gradient(90deg,var(--cemp-light),var(--cemp)); }
+.prod .num{ font-family:'IBM Plex Mono'; font-weight:600; font-size:14px; text-align:right; }
+.prod .num small{ display:block; font-size:10px; color:var(--ink-3); font-weight:500; }
+
+.donut-wrap{ display:flex; align-items:center; gap:22px; }
+.donut{ position:relative; width:148px; height:148px; flex:none; }
+.donut .ctr{ position:absolute; inset:0; display:grid; place-items:center; text-align:center; }
+.donut .ctr .big{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:30px; line-height:1; }
+.donut .ctr .lbl{ font-size:10.5px; color:var(--ink-3); margin-top:3px; }
+.dleg{ display:flex; flex-direction:column; gap:9px; }
+.dleg .di{ display:flex; align-items:center; gap:9px; font-size:12.5px; color:var(--ink-2); }
+.dleg .di .sw{ width:11px; height:11px; border-radius:3px; }
+.dleg .di b{ margin-left:auto; font-family:'IBM Plex Mono'; color:var(--ink); }
+.areawrap{ padding:4px 6px 0; }
+
+/* trazabilidad feed */
+.feed{ display:flex; flex-direction:column; }
+.fev{ display:grid; grid-template-columns:54px 1fr auto; gap:12px; align-items:center; padding:11px 4px; border-bottom:1px solid var(--border); }
+.fev:last-child{ border-bottom:none; }
+.fev .tm{ font-family:'IBM Plex Mono'; font-size:12px; font-weight:600; color:var(--ink-3); }
+.fev .ic{ width:30px; height:30px; border-radius:8px; display:grid; place-items:center; flex:none; }
+.fev .ic svg{ width:15px; height:15px; }
+.fev .bd{ display:flex; align-items:center; gap:9px; }
+.fev .tx{ font-size:13px; } .fev .tx b{ font-weight:700; }
+.fev .tx .sub{ font-size:11px; color:var(--ink-3); }
+.fev .who{ font-size:11.5px; color:var(--ink-2); font-weight:600; }
+
+/* ============ BOTONES (panel de cama) ============ */
+.btn{ flex:1; padding:11px; border-radius:10px; font-size:13px; font-weight:700; transition:.15s; text-align:center; }
+.btn-primary{ background:var(--cemp); color:#fff; } .btn-primary:hover{ background:var(--cemp-deep); }
+.btn-ghost{ background:var(--surface-2); color:var(--ink-2); border:1px solid var(--border); flex:none; padding:11px 14px; }
+.btn-ghost:hover{ background:var(--surface-3); }
+.btn-ok{ background:var(--lista); color:#fff; } .btn-ok:hover{ filter:brightness(.95); }
+.dr-chk .row[data-idx]:hover{ background:var(--surface-2); border-radius:8px; }
+
+/* ============ DRAWER ============ */
+.scrim{ position:fixed; inset:0; background:rgba(15,30,50,.34); backdrop-filter:blur(2px); opacity:0; visibility:hidden; transition:.25s; z-index:60; }
+.scrim.show{ opacity:1; visibility:visible; }
+.drawer{ position:fixed; top:0; right:0; bottom:0; width:430px; max-width:92vw; background:var(--surface); box-shadow:var(--shadow-lg);
+  transform:translateX(100%); transition:transform .3s cubic-bezier(.4,0,.2,1); z-index:61; display:flex; flex-direction:column; }
+.drawer.show{ transform:none; }
+.dr-head{ padding:20px 22px; color:#fff; position:relative; }
+.dr-head .close{ position:absolute; top:16px; right:16px; width:32px; height:32px; border-radius:9px; background:rgba(255,255,255,.18); color:#fff; display:grid; place-items:center; }
+.dr-head .close:hover{ background:rgba(255,255,255,.3); }
+.dr-head .rid{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:30px; line-height:1.05; letter-spacing:-.02em; }
+.dr-head .code{ font-family:'IBM Plex Mono'; font-size:12px; opacity:.85; margin-top:4px; }
+.dr-head .meta{ display:flex; gap:8px; margin-top:11px; flex-wrap:wrap; }
+.dr-head .chip{ font-size:11px; font-weight:700; background:rgba(255,255,255,.2); padding:4px 10px; border-radius:20px; }
+.dr-body{ flex:1; overflow-y:auto; padding:20px 22px; }
+.dr-sec{ font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); margin:4px 0 12px; }
+.dr-sec:not(:first-child){ margin-top:24px; }
+.photos{ display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+.photo{ aspect-ratio:4/3; border-radius:11px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--ink-3); position:relative; overflow:hidden; }
+.photo.before{ background:repeating-linear-gradient(45deg,#F0F4F8,#F0F4F8 10px,#EAEFF5 10px,#EAEFF5 20px); }
+.photo.after{ background:repeating-linear-gradient(45deg,var(--lista-w),var(--lista-w) 10px,#DAF1E5 10px,#DAF1E5 20px); }
+.photo svg{ width:26px; height:26px; opacity:.55; }
+.photo .lab{ font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; position:absolute; top:9px; left:10px; }
+.photo.before .lab{ color:var(--ink-3); } .photo.after .lab{ color:var(--lista); }
+.timeline{ position:relative; padding-left:26px; }
+.timeline::before{ content:""; position:absolute; left:8px; top:6px; bottom:6px; width:2px; background:var(--border); }
+.tev{ position:relative; padding-bottom:18px; }
+.tev:last-child{ padding-bottom:0; }
+.tev .dot{ position:absolute; left:-22px; top:2px; width:14px; height:14px; border-radius:50%; background:#fff; border:3px solid var(--cemp); }
+.tev.done .dot{ background:var(--cemp); }
+.tev.pending .dot{ border-color:var(--border-strong); }
+.tev .tm{ font-family:'IBM Plex Mono'; font-size:12px; font-weight:600; color:var(--cemp-deep); }
+.tev.pending .tm{ color:var(--ink-4); }
+.tev .ti{ font-size:13.5px; font-weight:600; margin-top:1px; }
+.tev .sub{ font-size:12px; color:var(--ink-2); margin-top:2px; }
+.dr-chk{ display:flex; flex-direction:column; gap:1px; }
+.dr-chk .row{ display:flex; align-items:center; gap:10px; font-size:13px; color:var(--ink-2); padding:7px 0; }
+.dr-chk .row .bx{ width:18px; height:18px; border-radius:5px; background:var(--lista); display:grid; place-items:center; flex:none; }
+.dr-chk .row .bx svg{ width:11px; height:11px; stroke:#fff; }
+.dr-chk .row.pend .bx{ background:var(--surface-3); border:1.5px solid var(--border-strong); }
+.dr-foot{ padding:16px 22px; border-top:1px solid var(--border); display:flex; gap:10px; }
+
+/* drawer inner tabs + control sheet */
+.dr-tabs{ display:flex; gap:5px; background:var(--surface-2); border:1px solid var(--border); border-radius:11px; padding:4px; margin-bottom:18px; }
+.dr-tab{ flex:1; padding:9px 6px; border-radius:8px; font-size:12.5px; font-weight:700; color:var(--ink-3); transition:.15s; }
+.dr-tab.on{ background:var(--cemp); color:#fff; box-shadow:0 2px 7px rgba(28,127,190,.3); }
+.dr-tab:not(.on):hover{ color:var(--ink); }
+.ctrl-head{ display:grid; grid-template-columns:1fr 1fr; gap:9px 16px; background:var(--surface-2); border:1px solid var(--border); border-radius:11px; padding:13px 15px; margin-bottom:8px; }
+.ctrl-head .f .l{ font-size:10.5px; color:var(--ink-3); }
+.ctrl-head .f .v{ font-size:13px; font-weight:700; color:var(--ink); margin-top:1px; }
+.ctrl-head .f.full{ grid-column:1 / -1; border-top:1px dashed var(--border); padding-top:8px; }
+.ctrl-prog{ display:flex; align-items:center; gap:10px; margin:14px 0 16px; }
+.ctrl-prog .bar{ flex:1; height:7px; background:var(--surface-3); border-radius:10px; overflow:hidden; }
+.ctrl-prog .bar i{ display:block; height:100%; background:linear-gradient(90deg,var(--cemp-light),var(--cemp)); border-radius:10px; transition:width .3s; }
+.ctrl-prog .n{ font-family:'IBM Plex Mono'; font-size:12px; font-weight:600; color:var(--ink); }
+.ctrl-group{ margin-bottom:14px; }
+.ctrl-group .gh{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--cemp-deep); background:var(--cemp-wash); padding:5px 11px; border-radius:7px; display:inline-block; margin-bottom:4px; }
+.ctrl-item{ display:flex; align-items:center; gap:11px; padding:8px 6px; font-size:13px; color:var(--ink-2); border-radius:8px; }
+.ctrl-item.tap{ cursor:pointer; }
+.ctrl-item.tap:hover{ background:var(--surface-2); }
+.ctrl-item .bx{ width:20px; height:20px; border-radius:6px; border:2px solid var(--border-strong); flex:none; display:grid; place-items:center; transition:.15s; }
+.ctrl-item.on .bx{ background:var(--lista); border-color:var(--lista); }
+.ctrl-item .bx svg{ width:12px; height:12px; stroke:#fff; opacity:0; }
+.ctrl-item.on .bx svg{ opacity:1; }
+.ctrl-item.on{ color:var(--ink-3); }
+.ctrl-locked{ pointer-events:none; opacity:.85; }
+.ctrl-signed{ display:flex; align-items:center; gap:9px; background:var(--lista-w); border:1px solid #C7E9D6; border-radius:10px; padding:11px 14px; margin-bottom:14px; font-size:12.5px; color:#1C7A4E; }
+.ctrl-signed svg{ width:18px; height:18px; flex:none; }
+.ctrl-obs{ width:100%; min-height:74px; border:1px solid var(--border); border-radius:10px; padding:11px 13px; font-family:inherit; font-size:13px; color:var(--ink); resize:vertical; background:var(--surface-2); }
+.kv-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.kv-box{ background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:11px 13px; }
+.kv-box .l{ font-size:11px; color:var(--ink-3); }
+.kv-box .v{ font-family:'IBM Plex Mono'; font-size:14px; font-weight:600; margin-top:3px; }
+
+.foot-note{ text-align:center; font-size:11.5px; color:var(--ink-4); padding:14px; }
+.foot-note b{ color:var(--ink-3); }
+
+@media (max-width:1100px){
+  .board{ grid-template-columns:1fr; } .rail{ position:static; }
+  .legend, .floorfilter{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); }
+  .kgrid{ grid-template-columns:repeat(2,1fr); } .krow2{ grid-template-columns:1fr; }
+  .mucama-stage{ grid-template-columns:1fr; justify-items:center;} .phone{ position:static; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============ TOP BAR ============ -->
+<header class="topbar">
+  <div class="brand">
+    <svg class="mark" viewBox="0 0 48 48" fill="none" aria-label="Clínica CEMP">
+      <circle cx="17" cy="13" r="6" fill="#1C7FBE"/>
+      <circle cx="31" cy="13" r="6" fill="#5BA8D6"/>
+      <circle cx="24" cy="20.5" r="3" fill="#135C8C"/>
+      <path d="M9 41V30c0-4.4 3.6-8 8-8 2.9 0 5.4 1.55 6.8 3.85" stroke="#1C7FBE" stroke-width="5" stroke-linecap="round"/>
+      <path d="M39 41V30c0-4.4-3.6-8-8-8-2.9 0-5.4 1.55-6.8 3.85" stroke="#5BA8D6" stroke-width="5" stroke-linecap="round"/>
+    </svg>
+    <div class="wm"><span class="sup">Clínica</span><span class="nm">CEMP</span></div>
+    <div class="div"></div>
+    <div class="modtag">Control de <b>Housekeeping</b></div>
+  </div>
+  <div class="topright">
+    <div class="turno"><span class="dot"></span>Turno <b id="turno">Tarde</b> · Encargada <b>P. Roldán</b></div>
+    <div class="live"><span class="pulse"></span>EN VIVO</div>
+    <div class="clock"><div class="t" id="clock">14:32</div><div class="d" id="date">lunes 8 jun</div></div>
+  </div>
+</header>
+
+<!-- ============ TABS ============ -->
+<div class="tabwrap">
+  <nav class="tabs">
+    <button class="tab active" data-view="tablero">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      Tablero de camas
+    </button>
+    <button class="tab" data-view="kpis">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
+      KPIs &amp; Trazabilidad
+    </button>
+  </nav>
+</div>
+
+<!-- ============ TABLERO ============ -->
+<main class="view active" id="view-tablero">
+  <div class="board">
+    <aside class="rail">
+      <div class="panel"><div class="ph">Estados de cama</div><div class="legend" id="legend"></div></div>
+      <div class="panel"><div class="ph">Pisos / Sectores</div><div class="floorfilter" id="floorfilter"></div></div>
+      <div class="panel"><div class="ph">Resumen del turno</div><div class="summary" id="summary"></div></div>
+    </aside>
+    <section class="boardmain">
+      <div class="alertbar" id="alertbar">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></div>
+        <div class="tx" id="alerttext"></div>
+      </div>
+      <div id="sectors"></div>
+    </section>
+  </div>
+</main>
+
+<!-- ============ KPIs & TRAZABILIDAD ============ -->
+<main class="view" id="view-kpis">
+  <div class="kgrid" id="kgrid"></div>
+  <div class="krow2">
+    <div class="card">
+      <div class="card-h"><div><div class="ct">Turnaround por hora</div><div class="cs">Tiempo egreso → cama lista (min) · turno tarde</div></div></div>
+      <div class="card-b areawrap" id="areachart"></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><div><div class="ct" id="donut-title">Estado de las camas</div><div class="cs">en tiempo real</div></div></div>
+      <div class="card-b"><div class="donut-wrap"><div class="donut" id="donut"></div><div class="dleg" id="donutleg"></div></div></div>
+    </div>
+  </div>
+  <div class="krow2">
+    <div class="card">
+      <div class="card-h"><div><div class="ct">Camas higienizadas por hora</div><div class="cs">Hoy · acumulado del turno</div></div></div>
+      <div class="card-b"><div class="barchart" id="barchart"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-h"><div><div class="ct">Productividad por mucama</div><div class="cs">Camas / tiempo promedio</div></div></div>
+      <div class="card-b"><div class="prod-list" id="prodlist"></div></div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-h"><div><div class="ct">Trazabilidad en vivo</div><div class="cs">Últimos movimientos registrados — cada cama, quién y cuándo</div></div></div>
+    <div class="card-b" style="padding-top:4px;"><div class="feed" id="feed"></div></div>
+  </div>
+  <div class="foot-note">Datos simulados para demostración · <b>Clínica CEMP — Control de Housekeeping</b> · maqueta sin conexión a sistemas reales</div>
+</main>
+
+<!-- ============ DRAWER ============ -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer">
+  <div class="dr-head" id="dr-head">
+    <button class="close" id="dr-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    <div class="rid" id="dr-rid">—</div>
+    <div class="code" id="dr-code"></div>
+    <div class="meta" id="dr-meta"></div>
+  </div>
+  <div class="dr-body" id="dr-body"></div>
+  <div class="dr-foot" id="dr-foot"></div>
+</aside>
+
+<script>
+/* ============================================================
+   CLÍNICA CEMP · CONTROL DE HOUSEKEEPING — demo (control de mucamas + trazabilidad)
+   Unidad de control = la CAMA. 70 camas / 57 unidades. Carga desde la tablet del piso.
+   ============================================================ */
+
+const STATES = {
+  ocupada:  {label:'Ocupada',           color:'var(--ocupada)',  wash:'var(--ocupada-w)'},
+  egreso:   {label:'Egreso · por limpiar', color:'var(--egreso)', wash:'var(--egreso-w)'},
+  limpieza: {label:'En limpieza',       color:'var(--limpieza)', wash:'var(--limpieza-w)'},
+  lista:    {label:'Lista',             color:'var(--lista)',    wash:'var(--lista-w)'},
+  mant:     {label:'Fuera de servicio', color:'var(--mant)',     wash:'var(--mant-w)'},
+};
+const SLA = { egreso:15, limpieza:45 }; // min objetivo
+
+const MUCAMAS = ['Rosa Méndez','Carla Suárez','Marta Gómez','Liliana Paz','Norma Díaz'];
+const initials = n => n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+
+const CHECKLISTS = {
+  rutina:   ['Tender la cama','Reponer toallas y papel','Limpiar y desinfectar baño','Trapear piso','Vaciar residuos','Repasar superficies'],
+  terminal: ['Retirar ropa de cama','Desinfección de colchón y almohada','Desinfección de superficies de contacto','Limpieza profunda de baño','Trapear con desinfectante','Reposición kit de paciente','Control final'],
+  uci:      ['Retiro de material descartable','Desinfección de alto nivel','Limpieza de monitor y equipamiento','Doble desinfección de superficies','Limpieza de piso','Control de terminal'],
+  ais:      ['Colocación de EPP','Doble bolsa residuos patológicos','Desinfección reforzada de contacto','Limpieza terminal completa','Registro epidemiológico','Retiro seguro de EPP'],
+};
+const CLEAN_LABEL = {rutina:'Rutina',terminal:'Terminal · egreso',uci:'Terminal UCI/UTI',ais:'Aislamiento'};
+
+/* ---- Estructura REAL Clínica CEMP: 57 unidades / 70 camas ----
+   Planta Baja: Guardia (1 doble) · Dobles obras sociales (12) · UCI PB (6) · UTI terapia intensiva (12)
+   Piso 1: UCI (6) + individuales estándar (6)
+   Piso 2: individuales estándar (14)                                                      */
+function doubleRooms(){ const o=[]; for(let i=1;i<=12;i++){ const a=2*i-1,b=2*i; o.push({id:`${a}-${b}`, beds:[`Cama ${a}`,`Cama ${b}`]}); } return o; }
+function uciIds(prefix,n){ const o=[]; for(let i=1;i<=n;i++) o.push({id:prefix+'-'+i, beds:[prefix+'-'+i]}); return o; }
+function numRooms(prefix,a,b){ const o=[]; for(let i=a;i<=b;i++){ const id=prefix+String(i).padStart(2,'0'); o.push({id, beds:[id]}); } return o; }
+
+const SECTOR_DEFS = [
+  // PLANTA BAJA
+  {sector:'Guardia',                        floor:'Planta Baja', kind:'guardia', rooms:[{id:'Guardia', beds:['Cama 25','Cama 26']}]},
+  {sector:'Internación Dobles · O. Sociales',floor:'Planta Baja', kind:'doble',  rooms:doubleRooms()},
+  {sector:'UCI · Planta Baja',              floor:'Planta Baja', kind:'uci',     rooms:uciIds('UCI-PB',6)},
+  {sector:'UTI · Terapia Intensiva',        floor:'Planta Baja', kind:'uti',     rooms:numRooms('UTI-',1,12)},
+  // PISO 1
+  {sector:'UCI · Piso 1',                   floor:'Piso 1',      kind:'uci',     rooms:uciIds('UCI-P1',6)},
+  {sector:'Individuales · Piso 1',          floor:'Piso 1',      kind:'piso',    rooms:numRooms('1',1,6)},
+  // PISO 2
+  {sector:'Individuales · Piso 2',          floor:'Piso 2',      kind:'piso',    rooms:numRooms('2',1,14)},
+];
+const KIND_META = {
+  uci:    {tag:'UCI',     roomType:'UCI · Cuidados intensivos', utag:'uci'},
+  uti:    {tag:'UTI',     roomType:'UTI · Terapia intensiva',   utag:'uti'},
+  doble:  {tag:'Doble',   roomType:'Habitación doble',          utag:'doble'},
+  piso:   {tag:'Piso',    roomType:'Individual estándar',       utag:'piso'},
+  guardia:{tag:'Guardia', roomType:'Guardia · no internación',  utag:'guardia'},
+};
+
+/* ---- Check List de Control de Habitación (transcripto de la hoja CEMP) ---- */
+const ROOM_CHECK = {
+  'Armario':              ['Perchas (4)','Acolchado polar','Cajones'],
+  'Antebaño':             ['Jabón','Puerta bajo mesada','Espejo'],
+  'Baño':                 ['Bobina papel higiénico','Mochila inodoro','Accesorio ducha','Tacho de basura'],
+  'TV':                   ['Conexión detrás de TV','Control TV','Pilas control','Dispenser alcohol'],
+  'Cama y silla':         ['Detrás','Debajo','Almohada con funda','Cubre cama y sábanas','Toallón grande'],
+  'Verificar superficies':['Paredes','Mesa de comer','Cortinas','Armario'],
+};
+const RC_TOTAL = Object.values(ROOM_CHECK).reduce((n,a)=>n+a.length,0); // 23 ítems
+const rcKey = (g,it)=> g+'::'+it;
+const rcCount = b => Object.keys(b.roomCheck||{}).length;
+
+/* ---- Reloj simulado: 1 seg real = 1 min simulado ---- */
+let simMin = 14*60 + 32;
+const fmtClock = m => String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(((m%60)+60)%60).padStart(2,'0');
+function rand(a,b){ return a+Math.floor(Math.random()*(b-a+1)); }
+function pick(arr){ return arr.length? arr[Math.floor(Math.random()*arr.length)] : null; }
+
+/* ---- Construcción de camas ---- */
+let ROOMS = [];
+const log = []; // trazabilidad feed
+function seedBeds(){
+  ROOMS = [];
+  const dist = ['ocupada','lista','ocupada','egreso','limpieza','ocupada','lista','ocupada','mant','egreso'];
+  let di=0;
+  SECTOR_DEFS.forEach(s=>{
+    const km = KIND_META[s.kind];
+    const isInt = s.kind==='uci'||s.kind==='uti';
+    s.rooms.forEach(rdef=>{
+      const room = { id:rdef.id, sector:s.sector, floor:s.floor, kind:s.kind, roomType:km.roomType, utag:km.utag, tag:km.tag, beds:[] };
+      rdef.beds.forEach(code=>{
+        let st = dist[di % dist.length]; di++;
+        const aisla = (isInt && Math.random()<.4);
+        let cleanType = isInt?'uci':'terminal';
+        if(aisla) cleanType='ais';
+        if(st==='limpieza'||st==='egreso'){ cleanType = isInt?(aisla?'ais':'uci'): (di%2?'terminal':'rutina'); }
+        const assigned = (st==='limpieza') ? MUCAMAS[di%MUCAMAS.length] : (st==='egreso' && Math.random()<.4 ? MUCAMAS[di%MUCAMAS.length] : null);
+        const total = CHECKLISTS[cleanType].length;
+        const progress = st==='limpieza'? Math.max(1,Math.floor(total*0.4)+(di%2)) : 0;
+        // control de habitación: completo en camas listas, parcial en limpieza, vacío en el resto
+        const roomCheck={}; let rcFinishedAt=null, rcBy=null;
+        if(st==='lista'){ Object.entries(ROOM_CHECK).forEach(([g,items])=>items.forEach(it=> roomCheck[rcKey(g,it)]=true));
+          rcFinishedAt=simMin-rand(2,9); rcBy=MUCAMAS[di%MUCAMAS.length]; }
+        else if(st==='limpieza'){ let n=rand(4,12),c=0; for(const [g,items] of Object.entries(ROOM_CHECK)){ for(const it of items){ if(c<n){roomCheck[rcKey(g,it)]=true;c++;} } } }
+        room.beds.push({
+          bedId:code, code,
+          label: rdef.beds.length>1 ? code : 'Cama',
+          roomId:rdef.id, sector:s.sector, floor:s.floor, kind:s.kind, roomType:km.roomType,
+          state:st, isolation:aisla, urgent:(st==='egreso' && di%7===0),
+          assigned, cleanType, progress, total, sinceMin: simMin - rand(2,40),
+          egresoAt: simMin - rand(18,55),
+          roomCheck, roomObs:'', rcFinishedAt, rcBy,
+        });
+      });
+      ROOMS.push(room);
+    });
+  });
+  seedLog();
+}
+const allBeds = () => ROOMS.flatMap(r=>r.beds);
+const findBed = id => allBeds().find(b=>b.bedId===id);
+
+function seedLog(){
+  log.length=0;
+  const samples=[
+    {t:simMin-2, ev:'lista', code:'Cama 7', who:'Carla S.'},
+    {t:simMin-5, ev:'limpieza', code:'UTI-03', who:'Norma D.'},
+    {t:simMin-9, ev:'lista', code:'205', who:'Rosa M.'},
+    {t:simMin-12, ev:'egreso', code:'Cama 18', who:'—'},
+    {t:simMin-15, ev:'lista', code:'UCI-PB-2', who:'Liliana P.'},
+    {t:simMin-19, ev:'limpieza', code:'UCI-P1-4', who:'Marta G.'},
+  ];
+  samples.forEach(s=>log.push(s));
+}
+function pushLog(ev, bed){
+  log.unshift({t:simMin, ev, code:bed.code, who: bed.assigned? bed.assigned.split(' ')[0]+' '+initials(bed.assigned)[1]+'.' : '—'});
+  if(log.length>40) log.pop();
+}
+
+/* ============ TABLERO ============ */
+let activeFloor='all';
+
+function renderLegend(){
+  const counts={}; Object.keys(STATES).forEach(k=>counts[k]=0);
+  allBeds().forEach(b=>counts[b.state]++);
+  document.getElementById('legend').innerHTML =
+    Object.entries(STATES).map(([k,v])=>`<div class="lg"><span class="sw" style="background:${v.color}"></span>${v.label}<span class="ct">${counts[k]}</span></div>`).join('') +
+    `<div class="lg special"><span class="sw"></span>Aislamiento<span class="ct">${allBeds().filter(b=>b.isolation).length}</span></div>`;
+}
+function renderFloorFilter(){
+  const floors=[...new Set(SECTOR_DEFS.map(s=>s.floor))];
+  let html=`<button class="ff ${activeFloor==='all'?'active':''}" data-f="all">Todos los pisos<span class="n">${allBeds().length} camas</span></button>`;
+  floors.forEach(f=>{ const n=allBeds().filter(b=>b.floor===f).length;
+    html+=`<button class="ff ${activeFloor===f?'active':''}" data-f="${f}">${f}<span class="n">${n}</span></button>`; });
+  const el=document.getElementById('floorfilter'); el.innerHTML=html;
+  el.querySelectorAll('.ff').forEach(b=> b.onclick=()=>{ activeFloor=b.dataset.f; renderFloorFilter(); renderSectors(); });
+}
+function timerClass(b){ const t=simMin-b.sinceMin; if(SLA[b.state]&&t>SLA[b.state])return 'bad'; if(SLA[b.state]&&t>SLA[b.state]*0.7)return 'warn'; return ''; }
+
+function bedCell(b){
+  const st=STATES[b.state]; const t=simMin-b.sinceMin; const tc=timerClass(b);
+  const showWho=b.assigned && (b.state==='limpieza'||b.state==='egreso');
+  return `<div class="bed ${b.isolation?'aisla':''}" style="--st:${st.color};--st-w:${st.wash}" data-id="${b.bedId}">
+    <div class="btop">
+      <div class="blab">${b.label}</div>
+      ${b.urgent?'<span class="bbadge urg">Urg</span>':b.isolation?'<span class="bbadge ais">Aisl</span>':''}
+    </div>
+    <span class="bstate"><span class="d"></span>${st.label}</span>
+    <div class="bfoot">
+      <div class="bwho">${showWho?`<span class="av">${initials(b.assigned)}</span><span>${b.assigned.split(' ')[0]}</span>`:'<span style="color:var(--ink-4)">—</span>'}</div>
+      ${SLA[b.state]?`<div class="btimer ${tc}">${t}'</div>`:''}
+    </div>
+  </div>`;
+}
+function unitCard(r){
+  return `<div class="unit">
+    <div class="unit-h">
+      <span class="uid">${r.id}</span>
+      <span class="utag ${r.utag}">${r.tag}</span>
+      <span class="umeta">${r.beds.length} cama${r.beds.length>1?'s':''}</span>
+    </div>
+    <div class="unit-beds">${r.beds.map(bedCell).join('')}</div>
+  </div>`;
+}
+function renderSectors(){
+  const defs=SECTOR_DEFS.filter(s=> activeFloor==='all'||s.floor===activeFloor);
+  const el=document.getElementById('sectors');
+  el.innerHTML=defs.map(s=>{
+    const rs=ROOMS.filter(r=>r.sector===s.sector);
+    const beds=rs.flatMap(r=>r.beds); const ready=beds.filter(b=>b.state==='lista').length;
+    return `<div class="sector">
+      <div class="sector-h"><span class="ttl">${s.sector}</span><span class="fl">${s.floor}</span><span class="line"></span><span class="cnt">${ready}/${beds.length} camas listas</span></div>
+      <div class="units">${rs.map(unitCard).join('')}</div>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('.bed').forEach(c=> c.onclick=()=>openBed(c.dataset.id));
+}
+function renderSummary(){
+  const counts={}; Object.keys(STATES).forEach(k=>counts[k]=0); allBeds().forEach(b=>counts[b.state]++);
+  const pend=counts.egreso+counts.limpieza;
+  document.getElementById('summary').innerHTML=`
+    <div class="sumrow"><span class="l">Camas listas</span><span class="v" style="color:var(--lista)">${counts.lista}</span></div>
+    <div class="sumrow"><span class="l">En proceso</span><span class="v" style="color:var(--limpieza)">${pend}</span></div>
+    <div class="sumrow"><span class="l">Ocupadas</span><span class="v" style="color:var(--ocupada)">${counts.ocupada}</span></div>
+    <div class="sumrow"><span class="l">Fuera de servicio</span><span class="v" style="color:var(--mant)">${counts.mant}</span></div>
+    <div class="sumrow"><span class="l">Turnaround prom.</span><span class="v" style="color:var(--cemp)">28'</span></div>`;
+}
+function renderAlerts(){
+  const late=allBeds().filter(b=> SLA[b.state] && (simMin-b.sinceMin)>SLA[b.state]);
+  const urg=allBeds().filter(b=>b.urgent && (b.state==='egreso'||b.state==='limpieza'));
+  const bar=document.getElementById('alertbar'), tx=document.getElementById('alerttext'); const msgs=[];
+  if(urg.length) msgs.push(`<b>${urg.length} cama${urg.length>1?'s':''} urgente${urg.length>1?'s':''}</b> para ingreso programado`);
+  if(late.length) msgs.push(`<b>${late.length} cama${late.length>1?'s':''}</b> por encima del tiempo objetivo`);
+  if(msgs.length){ bar.classList.remove('hide'); tx.innerHTML=msgs.join(' · ')+' — requieren atención de la encargada.'; }
+  else bar.classList.add('hide');
+}
+
+/* ============ KPIs ============ */
+const turnaroundSeries=[34,31,27,38,29,25,30,26];
+const completedSeries=[4,6,5,8,6,9,5,7];
+const hoursLabels=['08','09','10','11','12','13','14','15'];
+
+function renderKgrid(){
+  const counts={}; Object.keys(STATES).forEach(k=>counts[k]=0); allBeds().forEach(b=>counts[b.state]++);
+  const ready=counts.lista, proc=counts.egreso+counts.limpieza, TOTAL=allBeds().length;
+  const kpis=[
+    {l:'Turnaround promedio', icon:'<path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="9"/>', v:'28', u:'min', t:'<span class="up">▼ 16% vs ayer</span>'},
+    {l:'Tiempo de respuesta', icon:'<path d="M13 2 3 14h7l-1 8 10-12h-7z"/>', v:'6', u:'min', t:'<span class="up">▼ egreso → inicio</span>'},
+    {l:'Cumplimiento checklist', icon:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>', v:'98', u:'%', t:'<span class="up">▲ +2 pts</span>'},
+    {l:'Camas listas / pendientes', icon:'<rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v4"/>', v:ready, u:'/ '+proc, t:`<span class="neu">de ${TOTAL} camas</span>`},
+  ];
+  document.getElementById('kgrid').innerHTML=kpis.map(k=>`
+    <div class="kpi"><div class="kl"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${k.icon}</svg></span>${k.l}</div>
+    <div class="kv">${k.v}<small> ${k.u}</small></div><div class="kt">${k.t}</div></div>`).join('');
+}
+function renderAreaChart(){
+  const w=560,h=170,pad=24; const max=Math.max(...turnaroundSeries)+6,min=0;
+  const x=i=> pad + i*(w-pad*2)/(turnaroundSeries.length-1); const y=v=> h-pad-(v-min)/(max-min)*(h-pad*1.6);
+  const pts=turnaroundSeries.map((v,i)=>[x(i),y(v)]);
+  const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const area=`M${pad} ${h-pad} `+pts.map(p=>'L'+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ')+` L${w-pad} ${h-pad} Z`;
+  document.getElementById('areachart').innerHTML=`<svg viewBox="0 0 ${w} ${h}" width="100%" style="display:block">
+    <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1C7FBE" stop-opacity=".22"/><stop offset="1" stop-color="#1C7FBE" stop-opacity="0"/></linearGradient></defs>
+    ${[0,1,2,3].map(g=>`<line x1="${pad}" x2="${w-pad}" y1="${pad+g*(h-pad*1.6)/3}" y2="${pad+g*(h-pad*1.6)/3}" stroke="#EAF0F6" stroke-width="1"/>`).join('')}
+    <path d="${area}" fill="url(#ag)"/><path d="${line}" fill="none" stroke="#1C7FBE" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${pts.map((p,i)=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.5" fill="#fff" stroke="#1C7FBE" stroke-width="2"/><text x="${p[0].toFixed(1)}" y="${h-7}" text-anchor="middle" font-size="10" fill="#8493A6" font-family="IBM Plex Mono">${hoursLabels[i]}</text>`).join('')}
+  </svg>`;
+}
+function renderDonut(){
+  const counts={}; Object.keys(STATES).forEach(k=>counts[k]=0); allBeds().forEach(b=>counts[b.state]++);
+  const total=allBeds().length, C=2*Math.PI*52; let off=0;
+  const segs=Object.entries(STATES).filter(([k])=>counts[k]>0).map(([k,v])=>{
+    const frac=counts[k]/total; const dash=`${(frac*C).toFixed(1)} ${(C-frac*C).toFixed(1)}`;
+    const s=`<circle cx="74" cy="74" r="52" fill="none" stroke="${v.color}" stroke-width="20" stroke-dasharray="${dash}" stroke-dashoffset="${(-off*C).toFixed(1)}" transform="rotate(-90 74 74)"/>`;
+    off+=frac; return s; }).join('');
+  document.getElementById('donut-title').textContent=`Estado de las ${total} camas`;
+  document.getElementById('donut').innerHTML=`<svg viewBox="0 0 148 148" width="148" height="148">${segs}</svg><div class="ctr"><div class="big">${counts.lista}</div><div class="lbl">camas listas</div></div>`;
+  document.getElementById('donutleg').innerHTML=Object.entries(STATES).filter(([k])=>counts[k]>0).map(([k,v])=>`<div class="di"><span class="sw" style="background:${v.color}"></span>${v.label}<b>${counts[k]}</b></div>`).join('');
+}
+function renderBarchart(){
+  const max=Math.max(...completedSeries);
+  document.getElementById('barchart').innerHTML=completedSeries.map((v,i)=>`<div class="bc-col"><div class="bc-v">${v}</div><div class="bc-bars"><div class="bc-bar" style="height:${v/max*100}%"></div></div><div class="bc-x">${hoursLabels[i]}h</div></div>`).join('');
+}
+function renderProdList(){
+  const data=[{n:'Rosa Méndez',rooms:11,avg:23,pct:100},{n:'Carla Suárez',rooms:9,avg:26,pct:82},{n:'Marta Gómez',rooms:8,avg:29,pct:73},{n:'Liliana Paz',rooms:8,avg:28,pct:73},{n:'Norma Díaz',rooms:7,avg:31,pct:64}];
+  document.getElementById('prodlist').innerHTML=data.map(d=>`<div class="prod"><div class="av">${initials(d.n)}</div><div class="meta"><div class="nm">${d.n}</div><div class="sub">${d.avg}' promedio por cama</div></div><div class="num">${d.rooms}<small>camas</small></div><div class="bar"><i style="width:${d.pct}%"></i></div></div>`).join('');
+}
+const EV_META={
+  egreso:{c:'var(--egreso)',w:'var(--egreso-w)',t:'Egreso registrado',ic:'<path d="M16 17l5-5-5-5M21 12H9M13 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8"/>'},
+  limpieza:{c:'var(--limpieza)',w:'var(--limpieza-w)',t:'Inicio de limpieza',ic:'<path d="M3 21l6-6M14 4l6 6-9 9-6-2-2-6 9-9z"/>'},
+  lista:{c:'var(--lista)',w:'var(--lista-w)',t:'Cama lista',ic:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>'},
+  control:{c:'var(--cemp)',w:'var(--cemp-wash)',t:'Control de habitación firmado',ic:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>'},
+};
+function renderFeed(){
+  document.getElementById('feed').innerHTML=log.slice(0,8).map(e=>{
+    const m=EV_META[e.ev]||EV_META.lista;
+    return `<div class="fev"><span class="tm">${fmtClock(e.t)}</span>
+      <div class="bd"><span class="ic" style="background:${m.w};color:${m.c}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${m.ic}</svg></span>
+      <div class="tx"><div><b>Cama ${e.code}</b> — ${m.t}</div></div></div>
+      <span class="who">${e.who}</span></div>`;
+  }).join('');
+}
+
+/* ============ DRAWER INTERACTIVO — el punto de carga de la tablet del piso ============ */
+let currentBedId=null, drawerTab='limpieza';
+function openBed(id){ currentBedId=id; drawerTab='limpieza'; renderDrawer(); document.getElementById('scrim').classList.add('show'); document.getElementById('drawer').classList.add('show'); }
+function closeDrawer(){ currentBedId=null; document.getElementById('scrim').classList.remove('show'); document.getElementById('drawer').classList.remove('show'); }
+document.getElementById('dr-close').onclick=closeDrawer; document.getElementById('scrim').onclick=closeDrawer;
+
+const TICK='<svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 7"/></svg>';
+
+function renderDrawer(){
+  const b=findBed(currentBedId); if(!b)return; const st=STATES[b.state];
+  const body=document.getElementById('dr-body');
+  document.getElementById('dr-head').style.background=`linear-gradient(135deg, ${st.color}, color-mix(in srgb, ${st.color} 70%, #0a2a40))`;
+  document.getElementById('dr-rid').textContent = b.kind==='doble'?('Hab. '+b.roomId+' · '+b.label): b.kind==='piso'?('Habitación '+b.code): b.code;
+  document.getElementById('dr-code').textContent='Código de cama: '+b.code+'  ·  '+b.sector;
+  document.getElementById('dr-meta').innerHTML=
+    `<span class="chip">${st.label}</span><span class="chip">${b.floor}</span><span class="chip">${b.roomType}</span>`+
+    (b.isolation?'<span class="chip" style="background:rgba(255,255,255,.32)">⚠ Aislamiento</span>':'')+
+    (b.urgent?'<span class="chip" style="background:rgba(255,255,255,.32)">● Urgente</span>':'');
+
+  const tabbar=`<div class="dr-tabs">
+    <button class="dr-tab ${drawerTab==='limpieza'?'on':''}" data-t="limpieza">Limpieza</button>
+    <button class="dr-tab ${drawerTab==='control'?'on':''}" data-t="control">Control de habitación</button>
+  </div>`;
+  body.innerHTML = tabbar + (drawerTab==='limpieza'? sheetLimpieza(b) : sheetControl(b));
+  body.querySelectorAll('.dr-tab').forEach(t=> t.onclick=()=>{ drawerTab=t.dataset.t; renderDrawer(); });
+  if(drawerTab==='limpieza') wireLimpieza(b, body); else wireControl(b, body);
+  renderDrawerFoot(b);
+}
+
+/* ---- Hoja 1: Limpieza ---- */
+function sheetLimpieza(b){
+  const eg=b.egresoAt; const hasClean=['limpieza','lista'].includes(b.state);
+  const editable = (b.state==='egreso'||b.state==='limpieza');
+  const tl=[
+    {tm:fmtClock(eg), ti:'Egreso del paciente', sub:'Admisión marca la cama libre', done:b.state!=='ocupada'},
+    {tm:b.assigned?fmtClock(eg+rand(2,6)):'—', ti:'Asignada a mucama', sub:b.assigned||'Pendiente de asignación', done:!!b.assigned, pending:!b.assigned},
+    {tm:hasClean?fmtClock(eg+rand(7,12)):'—', ti:'Inicio de limpieza', sub:CLEAN_LABEL[b.cleanType], done:hasClean, pending:!hasClean},
+    {tm:b.state==='lista'?fmtClock(simMin-rand(1,6)):'—', ti:'Cama lista', sub:`Checklist ${b.progress}/${b.total} · ${b.assigned||'—'}`, done:b.state==='lista', pending:b.state!=='lista'},
+  ];
+  const selStyle="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);font-family:inherit;font-size:13px;color:var(--ink);font-weight:600";
+  const assignSel = `<select id="dr-assign" style="${selStyle}"><option value="">Sin asignar</option>${MUCAMAS.map(m=>`<option ${b.assigned===m?'selected':''}>${m}</option>`).join('')}</select>`;
+  return `
+    <div class="kv-grid">
+      <div class="kv-box"><div class="l">Tiempo en estado</div><div class="v">${SLA[b.state]?(simMin-b.sinceMin)+' min':'—'}</div></div>
+      <div class="kv-box"><div class="l">Tipo de limpieza</div><div class="v" style="font-size:12.5px">${CLEAN_LABEL[b.cleanType]}</div></div>
+    </div>
+    ${editable?`<div class="dr-sec">Mucama a cargo</div>${assignSel}`:''}
+    <div class="dr-sec">Trazabilidad de la cama</div>
+    <div class="timeline">${tl.map(e=>`<div class="tev ${e.done?'done':''} ${e.pending?'pending':''}"><span class="dot"></span><div class="tm">${e.tm}</div><div class="ti">${e.ti}</div><div class="sub">${e.sub}</div></div>`).join('')}</div>
+    <div class="dr-sec">Checklist de limpieza — ${CLEAN_LABEL[b.cleanType]} ${editable?'<span style="color:var(--cemp);text-transform:none;letter-spacing:0;font-weight:600"> · tocá para marcar</span>':''}</div>
+    <div class="dr-chk">${CHECKLISTS[b.cleanType].map((item,i)=>`<div class="row ${i<b.progress?'':'pend'}" ${editable?`data-idx="${i}" style="cursor:pointer"`:''}><span class="bx">${i<b.progress?TICK:''}</span>${item}</div>`).join('')}</div>
+    <div class="dr-sec">Registro fotográfico</div>
+    <div class="photos">
+      <div class="photo before"><span class="lab">Antes</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/></svg></div>
+      <div class="photo after"><span class="lab">Después</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/></svg></div>
+    </div>`;
+}
+function wireLimpieza(b, body){
+  const editable = (b.state==='egreso'||b.state==='limpieza');
+  if(editable){
+    const rows=body.querySelectorAll('.dr-chk .row[data-idx]');
+    rows.forEach(r=> r.onclick=()=>{
+      const i=+r.dataset.idx;
+      if(b.state==='egreso'){ b.state='limpieza'; b.sinceMin=simMin; if(!b.assigned)b.assigned=MUCAMAS[0]; b.progress=i+1; pushLog('limpieza',b); renderDrawer(); refreshAll(); return; }
+      b.progress = i<b.progress ? i : i+1;
+      rows.forEach((rr,ri)=>{ const on=ri<b.progress; rr.classList.toggle('pend',!on); rr.querySelector('.bx').innerHTML = on?TICK:''; });
+      renderDrawerFoot(b); refreshAll();
+    });
+  }
+  const sel=document.getElementById('dr-assign'); if(sel) sel.onchange=()=>{ b.assigned=sel.value||null; renderDrawer(); refreshAll(); };
+}
+
+/* ---- Hoja 2: Control de habitación (hoja CEMP) ---- */
+function sheetControl(b){
+  const done=rcCount(b), signed=!!b.rcFinishedAt;
+  const head=`<div class="ctrl-head">
+    <div class="f"><div class="l">N.º de cama</div><div class="v">${b.code}</div></div>
+    <div class="f"><div class="l">Mucama</div><div class="v">${b.assigned||b.rcBy||'—'}</div></div>
+    <div class="f"><div class="l">Fecha</div><div class="v">Lun 08/06/2026</div></div>
+    <div class="f"><div class="l">Hora finalizada</div><div class="v">${signed?fmtClock(b.rcFinishedAt):'—'}</div></div>
+    <div class="f full"><div class="l">Firma (digital)</div><div class="v">${signed?('✔ '+b.rcBy):'Pendiente de cierre'}</div></div>
+  </div>
+  <div class="ctrl-prog"><div class="bar"><i style="width:${done/RC_TOTAL*100}%"></i></div><div class="n">${done}/${RC_TOTAL}</div></div>`;
+  const signed_banner = signed?`<div class="ctrl-signed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Control finalizado por <b style="margin:0 3px">${b.rcBy}</b> · ${fmtClock(b.rcFinishedAt)}</div>`:'';
+  const groups=Object.entries(ROOM_CHECK).map(([g,items])=>`
+    <div class="ctrl-group">
+      <div class="gh">${g}</div>
+      ${items.map(it=>{ const k=rcKey(g,it); const on=!!b.roomCheck[k];
+        return `<div class="ctrl-item ${on?'on':''} ${signed?'':'tap'}" data-k="${k}"><span class="bx">${TICK}</span>${it}</div>`; }).join('')}
+    </div>`).join('');
+  return `${head}${signed_banner}
+    <div class="dr-sec">Verificación de la habitación ${signed?'':'<span style="color:var(--cemp);text-transform:none;letter-spacing:0;font-weight:600"> · tocá para marcar</span>'}</div>
+    <div class="${signed?'ctrl-locked':''}">${groups}</div>
+    <div class="dr-sec">Observaciones</div>
+    <textarea class="ctrl-obs" id="ctrl-obs" placeholder="Notas, faltantes o pedidos a mantenimiento…" ${signed?'disabled':''}>${b.roomObs||''}</textarea>`;
+}
+function wireControl(b, body){
+  if(b.rcFinishedAt) return; // firmado = solo lectura
+  body.querySelectorAll('.ctrl-item[data-k]').forEach(it=> it.onclick=()=>{
+    const k=it.dataset.k;
+    if(b.roomCheck[k]) delete b.roomCheck[k]; else b.roomCheck[k]=true;
+    it.classList.toggle('on');
+    const done=rcCount(b);
+    const bar=body.querySelector('.ctrl-prog .bar i'); if(bar) bar.style.width=(done/RC_TOTAL*100)+'%';
+    const n=body.querySelector('.ctrl-prog .n'); if(n) n.textContent=done+'/'+RC_TOTAL;
+    renderDrawerFoot(b);
+  });
+  const ta=body.querySelector('#ctrl-obs'); if(ta) ta.oninput=()=>{ b.roomObs=ta.value; };
+}
+
+function renderDrawerFoot(b){
+  let html='';
+  if(drawerTab==='control'){
+    if(b.rcFinishedAt) html=`<button class="btn btn-ghost" data-rc="reopen">Reabrir control</button><button class="btn btn-ok" disabled style="opacity:.7">✔ Control firmado</button>`;
+    else { const done=rcCount(b); html=`<button class="btn ${done>=RC_TOTAL?'btn-ok':'btn-primary'}" data-rc="finish">Finalizar y firmar control (${done}/${RC_TOTAL})</button>`; }
+    const foot=document.getElementById('dr-foot'); foot.innerHTML=html;
+    foot.querySelectorAll('[data-rc]').forEach(btn=> btn.onclick=()=>doRC(b, btn.dataset.rc));
+    return;
+  }
+  if(b.state==='ocupada') html=`<button class="btn btn-primary" data-act="egreso">Registrar egreso</button><button class="btn btn-ghost" data-act="mant">Fuera de servicio</button>`;
+  else if(b.state==='egreso') html=`<button class="btn btn-primary" data-act="start">Iniciar limpieza</button><button class="btn btn-ghost" data-act="mant">Fuera de servicio</button>`;
+  else if(b.state==='limpieza'){ const done=b.progress>=b.total;
+    html=`<button class="btn ${done?'btn-ok':'btn-primary'}" data-act="lista" ${done?'':'disabled style="opacity:.45;cursor:not-allowed"'}>${done?'Marcar cama lista':`Faltan ${b.total-b.progress} ítems`}</button><button class="btn btn-ghost" data-act="mant">Mantenim.</button>`; }
+  else if(b.state==='lista') html=`<button class="btn btn-primary" data-act="egreso">Registrar nuevo egreso</button><button class="btn btn-ghost" data-act="mant">Fuera de servicio</button>`;
+  else if(b.state==='mant') html=`<button class="btn btn-ok" data-act="reactivar">Volver a servicio</button>`;
+  const foot=document.getElementById('dr-foot'); foot.innerHTML=html;
+  foot.querySelectorAll('[data-act]').forEach(btn=> btn.onclick=()=>doAct(b, btn.dataset.act));
+}
+function doRC(b, act){
+  if(act==='finish'){ b.rcFinishedAt=simMin; b.rcBy=b.assigned||'Encargada P. Roldán';
+    log.unshift({t:simMin, ev:'control', code:b.code, who:b.rcBy.split(' ')[0]}); if(log.length>40)log.pop(); }
+  else if(act==='reopen'){ b.rcFinishedAt=null; b.rcBy=null; }
+  renderDrawer(); refreshAll();
+}
+
+function doAct(b, act){
+  const isInt=b.kind==='uci'||b.kind==='uti';
+  if(act==='egreso'){ b.state='egreso'; b.sinceMin=simMin; b.egresoAt=simMin; b.assigned=null; b.progress=0;
+    b.cleanType=isInt?(b.isolation?'ais':'uci'):'terminal'; b.total=CHECKLISTS[b.cleanType].length; pushLog('egreso',b); }
+  else if(act==='start'){ b.state='limpieza'; b.sinceMin=simMin; if(!b.assigned)b.assigned=MUCAMAS[0]; pushLog('limpieza',b); }
+  else if(act==='lista'){ if(b.progress>=b.total){ b.state='lista'; b.sinceMin=simMin; pushLog('lista',b); } }
+  else if(act==='mant'){ b.state='mant'; b.sinceMin=simMin; b.assigned=null; }
+  else if(act==='reactivar'){ b.state='lista'; b.sinceMin=simMin; }
+  renderDrawer(); refreshAll();
+}
+
+/* ============ TABS ============ */
+let currentView='tablero';
+document.querySelectorAll('.tab').forEach(t=> t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active');
+  currentView=t.dataset.view;
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+currentView).classList.add('active'); refreshAll();
+});
+
+/* ============ RELOJ + SIMULACIÓN ============ */
+function tickClock(){
+  simMin++;
+  document.getElementById('clock').textContent=fmtClock(simMin);
+  document.getElementById('date').textContent='lunes 8 jun';
+  if(currentView==='tablero'){ renderSectors(); renderSummary(); renderLegend(); renderAlerts(); }
+}
+function simulateStep(){
+  let b=pick(allBeds().filter(x=>x.state==='ocupada'));
+  if(b && Math.random()<.5){ const isUCI=b.kind==='uci'; b.state='egreso'; b.sinceMin=simMin; b.assigned=null; b.progress=0;
+    b.cleanType= isUCI?(b.isolation?'ais':'uci'): (Math.random()<.5?'terminal':'rutina'); b.total=CHECKLISTS[b.cleanType].length; b.egresoAt=simMin; b.urgent=Math.random()<.22; pushLog('egreso',b); }
+  b=pick(allBeds().filter(x=>x.state==='egreso'));
+  if(b){ if(!b.assigned)b.assigned=MUCAMAS[Math.floor(Math.random()*MUCAMAS.length)]; b.state='limpieza'; b.sinceMin=simMin; b.progress=1; pushLog('limpieza',b); }
+  b=pick(allBeds().filter(x=>x.state==='limpieza'));
+  if(b){ b.progress++; if(b.progress>=b.total){ b.state='lista'; b.sinceMin=simMin; pushLog('lista',b); } }
+  b=pick(allBeds().filter(x=>x.state==='lista'));
+  if(b && Math.random()<.3){ b.state='ocupada'; b.sinceMin=simMin; b.assigned=null; b.urgent=false; }
+  refreshAll();
+}
+function refreshAll(){
+  if(currentView==='tablero'){ renderLegend(); renderFloorFilter(); renderSectors(); renderSummary(); renderAlerts(); }
+  if(currentView==='kpis'){ renderKgrid(); renderAreaChart(); renderDonut(); renderBarchart(); renderProdList(); renderFeed(); }
+}
+
+/* ============ INIT ============ */
+seedBeds(); refreshAll();
+document.getElementById('clock').textContent=fmtClock(simMin);
+setInterval(tickClock, 1000);
+setInterval(simulateStep, 4500);
+</script>
+</body>
+</html>
