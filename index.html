@@ -14,11 +14,11 @@
   --border:#E0E8F1; --border-strong:#C9D6E4;
   --ink:#13202F; --ink-2:#4C5D72; --ink-3:#8493A6; --ink-4:#A9B6C6;
   --cemp:#1C7FBE; --cemp-deep:#135C8C; --cemp-light:#5BA8D6; --cemp-wash:#E6F1FA;
-  --ocupada:#5C7C9E;  --ocupada-w:#EAF0F6;
-  --egreso:#EF8A3C;   --egreso-w:#FDF1E6;
-  --limpieza:#149FB8; --limpieza-w:#E2F5F8;
-  --lista:#23A368;    --lista-w:#E4F6ED;
-  --mant:#94A0B0;     --mant-w:#EFF2F6;
+  --ocupada:#4F6E92;  --ocupada-w:#D7E2F0;
+  --egreso:#EF8A3C;   --egreso-w:#FBDFC4;
+  --limpieza:#0E9DB8; --limpieza-w:#C7ECF3;
+  --lista:#1FA060;    --lista-w:#CBEEDC;
+  --mant:#8693A6;     --mant-w:#E0E6EE;
   --aisla:#DE4A45;    --aisla-w:#FCEAE9;
   --uci:#C0573B;      --uci-w:#FBEDE7;
   --shadow-sm:0 1px 2px rgba(20,40,70,.05), 0 1px 3px rgba(20,40,70,.04);
@@ -124,15 +124,16 @@ button{ font-family:inherit; cursor:pointer; border:none; background:none; color
 .unit-h{ display:flex; align-items:center; gap:8px; margin-bottom:10px; padding:0 2px; }
 .unit-h .uid{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:16px; letter-spacing:-.02em; }
 .unit-h .utag{ font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; padding:2px 7px; border-radius:5px; }
-.utag.doble{ background:var(--cemp-wash); color:var(--cemp-deep); }
-.utag.uci{ background:var(--uci-w); color:var(--uci); }
-.utag.uti{ background:#EDE9FB; color:#6A4FC0; }
-.utag.guardia{ background:var(--egreso-w); color:#C56A1E; }
-.utag.piso{ background:var(--surface-3); color:var(--ink-2); }
+.utag{ border:1px solid currentColor; }
+.utag.doble{ background:#E3F0FB; color:#1565A8; }   /* azul */
+.utag.uci{ background:#FBE0DE; color:#C42C26; }     /* rojo */
+.utag.uti{ background:#ECE3FB; color:#6A3FC0; }     /* violeta */
+.utag.piso{ background:#DCF3E7; color:#157C4C; }    /* verde */
+.utag.guardia{ background:#FBEACF; color:#A96C12; } /* ámbar */
 .unit-h .umeta{ margin-left:auto; font-size:10px; color:var(--ink-4); }
 .unit-beds{ display:flex; gap:8px; }
-.bed{ flex:1; min-width:0; position:relative; background:var(--st-w); border:1px solid var(--border); border-left:3px solid var(--st);
-  border-radius:9px; padding:9px 10px; cursor:pointer; transition:transform .14s ease, box-shadow .14s ease; }
+.bed{ flex:1; min-width:0; position:relative; background:var(--st-w); border:1px solid color-mix(in srgb, var(--st) 28%, var(--border)); border-left:6px solid var(--st);
+  border-radius:9px; padding:9px 10px 9px 11px; cursor:pointer; transition:transform .14s ease, box-shadow .14s ease; }
 .bed:hover{ transform:translateY(-2px); box-shadow:var(--shadow-md); }
 .bed.aisla{ box-shadow:0 0 0 1.5px var(--aisla) inset; }
 .bed .btop{ display:flex; align-items:center; justify-content:space-between; gap:6px; }
@@ -141,8 +142,8 @@ button{ font-family:inherit; cursor:pointer; border:none; background:none; color
 .bed .bbadge{ font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; padding:1px 5px; border-radius:4px; flex:none; }
 .bed .bbadge.urg{ background:var(--aisla); color:#fff; }
 .bed .bbadge.ais{ background:#fff; color:var(--aisla); border:1px solid #F0C3C1; }
-.bed .bstate{ display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; color:var(--st); margin-top:8px; }
-.bed .bstate .d{ width:6px; height:6px; border-radius:50%; background:var(--st); }
+.bed .bstate{ display:inline-flex; align-items:center; gap:6px; font-size:10.5px; font-weight:700; color:#fff; background:var(--st); padding:4px 9px; border-radius:7px; margin-top:8px; letter-spacing:.01em; box-shadow:0 1px 2px color-mix(in srgb, var(--st) 35%, transparent); }
+.bed .bstate .d{ width:6px; height:6px; border-radius:50%; background:#fff; }
 .bed .bfoot{ display:flex; align-items:center; justify-content:space-between; gap:6px; margin-top:8px; padding-top:7px; border-top:1px solid rgba(0,0,0,.04); }
 .bed .bwho{ font-size:10px; color:var(--ink-2); display:flex; align-items:center; gap:5px; overflow:hidden; }
 .bed .bwho .av{ width:16px; height:16px; border-radius:50%; background:#fff; color:var(--cemp-deep); font-size:8px; font-weight:700; display:grid; place-items:center; flex:none; border:1px solid var(--border); }
