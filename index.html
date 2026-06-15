@@ -83,12 +83,25 @@ button{ font-family:inherit; cursor:pointer; border:none; background:none; color
 .rail{ position:sticky; top:96px; display:flex; flex-direction:column; gap:16px; }
 .panel{ background:var(--surface); border:1px solid var(--border); border-radius:var(--r); box-shadow:var(--shadow-sm); }
 .panel .ph{ padding:14px 16px 10px; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); }
-.legend{ padding:2px 14px 14px; }
-.lg{ display:flex; align-items:center; gap:10px; padding:7px 4px; font-size:13px; color:var(--ink-2); border-radius:8px; }
+.legend{ padding:4px 10px 12px; display:flex; flex-direction:column; gap:2px; }
+.lg{ display:flex; align-items:center; gap:10px; padding:9px 10px; font-size:13px; color:var(--ink-2); border-radius:9px;
+  width:100%; text-align:left; background:transparent; border:none; cursor:pointer; transition:.13s; font-weight:500; }
+.lg:hover{ background:var(--surface-3); }
+.lg.on{ background:var(--cemp-wash); color:var(--cemp-deep); font-weight:700; box-shadow:inset 0 0 0 1px #CFE3F4; }
 .lg .sw{ width:13px; height:13px; border-radius:4px; flex:none; }
-.lg .ct{ margin-left:auto; font-family:'IBM Plex Mono'; font-size:12px; font-weight:600; color:var(--ink); }
-.lg.special{ border-top:1px dashed var(--border); margin-top:5px; padding-top:11px; }
+.lg .ct{ margin-left:auto; font-family:'IBM Plex Mono'; font-size:12.5px; font-weight:700; color:var(--ink); }
+.lg.special{ border-top:1px dashed var(--border); margin-top:6px; padding-top:12px; border-radius:0 0 9px 9px; }
 .lg.special .sw{ background:var(--surface); border:2px solid var(--aisla); }
+
+.filterbar{ display:flex; align-items:center; gap:10px; background:var(--cemp-wash); border:1px solid #BFDCF0; border-radius:12px;
+  padding:11px 16px; margin-bottom:16px; font-size:13.5px; color:var(--cemp-deep); box-shadow:var(--shadow-sm); }
+.filterbar .sw{ width:13px; height:13px; border-radius:4px; flex:none; }
+.filterbar b{ color:var(--ink); font-weight:700; }
+.filterbar button{ margin-left:auto; background:#fff; border:1px solid var(--border); border-radius:8px; padding:7px 13px;
+  font-size:12.5px; font-weight:600; color:var(--ink-2); transition:.15s; }
+.filterbar button:hover{ background:var(--surface-3); color:var(--ink); }
+.emptyfilter{ text-align:center; padding:48px 20px; color:var(--ink-3); font-size:14px;
+  background:var(--surface); border:1px dashed var(--border-strong); border-radius:var(--r); }
 
 .floorfilter{ padding:6px 12px 14px; display:flex; flex-direction:column; gap:4px; }
 .ff{ display:flex; align-items:center; gap:9px; padding:9px 12px; border-radius:9px; font-size:13px; font-weight:600; color:var(--ink-2); transition:.15s; text-align:left; width:100%; }
@@ -406,11 +419,10 @@ button{ font-family:inherit; cursor:pointer; border:none; background:none; color
    ============================================================ */
 
 const STATES = {
-  ocupada:  {label:'Ocupada',           color:'var(--ocupada)',  wash:'var(--ocupada-w)'},
-  egreso:   {label:'Egreso · por limpiar', color:'var(--egreso)', wash:'var(--egreso-w)'},
-  limpieza: {label:'En limpieza',       color:'var(--limpieza)', wash:'var(--limpieza-w)'},
-  lista:    {label:'Lista',             color:'var(--lista)',    wash:'var(--lista-w)'},
-  mant:     {label:'Fuera de servicio', color:'var(--mant)',     wash:'var(--mant-w)'},
+  ocupada:  {label:'Ocupada',     color:'var(--ocupada)',  wash:'var(--ocupada-w)'},
+  egreso:   {label:'Check out',   color:'var(--egreso)',   wash:'var(--egreso-w)'},
+  limpieza: {label:'En limpieza', color:'var(--limpieza)', wash:'var(--limpieza-w)'},
+  lista:    {label:'Lista',       color:'var(--lista)',    wash:'var(--lista-w)'},
 };
 const SLA = { egreso:15, limpieza:45 }; // min objetivo
 
@@ -423,7 +435,7 @@ const CHECKLISTS = {
   uci:      ['Retiro de material descartable','Desinfección de alto nivel','Limpieza de monitor y equipamiento','Doble desinfección de superficies','Limpieza de piso','Control de terminal'],
   ais:      ['Colocación de EPP','Doble bolsa residuos patológicos','Desinfección reforzada de contacto','Limpieza terminal completa','Registro epidemiológico','Retiro seguro de EPP'],
 };
-const CLEAN_LABEL = {rutina:'Rutina',terminal:'Terminal · egreso',uci:'Terminal UCI/UTI',ais:'Aislamiento'};
+const CLEAN_LABEL = {rutina:'Rutina',terminal:'Terminal · check out',uci:'Terminal UCI/UTI',ais:'Aislamiento'};
 
 /* ---- Estructura REAL Clínica CEMP: 57 unidades / 70 camas ----
    Planta Baja: Guardia (1 doble) · Dobles obras sociales (12) · UCI PB (6) · UTI terapia intensiva (12)
@@ -477,7 +489,7 @@ let ROOMS = [];
 const log = []; // trazabilidad feed
 function seedBeds(){
   ROOMS = [];
-  const dist = ['ocupada','lista','ocupada','egreso','limpieza','ocupada','lista','ocupada','mant','egreso'];
+  const dist = ['ocupada','ocupada','lista','ocupada','egreso','ocupada','lista','limpieza','ocupada','lista'];
   let di=0;
   SECTOR_DEFS.forEach(s=>{
     const km = KIND_META[s.kind];
@@ -534,14 +546,18 @@ function pushLog(ev, bed){
 }
 
 /* ============ TABLERO ============ */
-let activeFloor='all';
+let activeFloor='all', activeState=null;
 
 function renderLegend(){
   const counts={}; Object.keys(STATES).forEach(k=>counts[k]=0);
   allBeds().forEach(b=>counts[b.state]++);
+  const iso=allBeds().filter(b=>b.isolation).length;
   document.getElementById('legend').innerHTML =
-    Object.entries(STATES).map(([k,v])=>`<div class="lg"><span class="sw" style="background:${v.color}"></span>${v.label}<span class="ct">${counts[k]}</span></div>`).join('') +
-    `<div class="lg special"><span class="sw"></span>Aislamiento<span class="ct">${allBeds().filter(b=>b.isolation).length}</span></div>`;
+    Object.entries(STATES).map(([k,v])=>`<button class="lg ${activeState===k?'on':''}" data-st="${k}"><span class="sw" style="background:${v.color}"></span>${v.label}<span class="ct">${counts[k]}</span></button>`).join('') +
+    `<button class="lg special ${activeState==='aislamiento'?'on':''}" data-st="aislamiento"><span class="sw"></span>Aislamiento<span class="ct">${iso}</span></button>`;
+  document.getElementById('legend').querySelectorAll('.lg').forEach(btn=> btn.onclick=()=>{
+    const s=btn.dataset.st; activeState=(activeState===s)?null:s; renderLegend(); renderSectors();
+  });
 }
 function renderFloorFilter(){
   const floors=[...new Set(SECTOR_DEFS.map(s=>s.floor))];
@@ -578,17 +594,35 @@ function unitCard(r){
     <div class="unit-beds">${r.beds.map(bedCell).join('')}</div>
   </div>`;
 }
+const filterBeds = beds => {
+  if(!activeState) return beds;
+  if(activeState==='aislamiento') return beds.filter(b=>b.isolation);
+  return beds.filter(b=>b.state===activeState);
+};
 function renderSectors(){
   const defs=SECTOR_DEFS.filter(s=> activeFloor==='all'||s.floor===activeFloor);
   const el=document.getElementById('sectors');
-  el.innerHTML=defs.map(s=>{
-    const rs=ROOMS.filter(r=>r.sector===s.sector);
-    const beds=rs.flatMap(r=>r.beds); const ready=beds.filter(b=>b.state==='lista').length;
+  let html='';
+  if(activeState){
+    const lbl = activeState==='aislamiento'?'Aislamiento':STATES[activeState].label;
+    const n = filterBeds(allBeds().filter(b=> activeFloor==='all'||b.floor===activeFloor)).length;
+    html += `<div class="filterbar"><span class="sw" style="background:${activeState==='aislamiento'?'#fff':STATES[activeState].color};${activeState==='aislamiento'?'border:2px solid var(--aisla)':''}"></span>Mostrando <b>${lbl}</b> · ${n} cama${n!==1?'s':''}<button id="clearfilter">✕ Quitar filtro</button></div>`;
+  }
+  const sectorsHtml = defs.map(s=>{
+    const rs0=ROOMS.filter(r=>r.sector===s.sector);
+    const rs = rs0.map(r=>({...r, beds:filterBeds(r.beds)})).filter(r=>r.beds.length);
+    if(!rs.length) return '';
+    const shown=rs.flatMap(r=>r.beds).length;
+    const ready=rs0.flatMap(r=>r.beds).filter(b=>b.state==='lista').length;
+    const cnt = activeState ? `${shown} cama${shown!==1?'s':''}` : `${ready}/${rs0.flatMap(r=>r.beds).length} camas listas`;
     return `<div class="sector">
-      <div class="sector-h"><span class="ttl">${s.sector}</span><span class="fl">${s.floor}</span><span class="line"></span><span class="cnt">${ready}/${beds.length} camas listas</span></div>
+      <div class="sector-h"><span class="ttl">${s.sector}</span><span class="fl">${s.floor}</span><span class="line"></span><span class="cnt">${cnt}</span></div>
       <div class="units">${rs.map(unitCard).join('')}</div>
     </div>`;
   }).join('');
+  html += sectorsHtml || `<div class="emptyfilter">No hay camas en este estado${activeFloor!=='all'?' en '+activeFloor:''}.</div>`;
+  el.innerHTML=html;
+  const cf=document.getElementById('clearfilter'); if(cf) cf.onclick=()=>{ activeState=null; renderLegend(); renderSectors(); };
   el.querySelectorAll('.bed').forEach(c=> c.onclick=()=>openBed(c.dataset.id));
 }
 function renderSummary(){
@@ -598,7 +632,6 @@ function renderSummary(){
     <div class="sumrow"><span class="l">Camas listas</span><span class="v" style="color:var(--lista)">${counts.lista}</span></div>
     <div class="sumrow"><span class="l">En proceso</span><span class="v" style="color:var(--limpieza)">${pend}</span></div>
     <div class="sumrow"><span class="l">Ocupadas</span><span class="v" style="color:var(--ocupada)">${counts.ocupada}</span></div>
-    <div class="sumrow"><span class="l">Fuera de servicio</span><span class="v" style="color:var(--mant)">${counts.mant}</span></div>
     <div class="sumrow"><span class="l">Turnaround prom.</span><span class="v" style="color:var(--cemp)">28'</span></div>`;
 }
 function renderAlerts(){
@@ -662,7 +695,7 @@ function renderProdList(){
   document.getElementById('prodlist').innerHTML=data.map(d=>`<div class="prod"><div class="av">${initials(d.n)}</div><div class="meta"><div class="nm">${d.n}</div><div class="sub">${d.avg}' promedio por cama</div></div><div class="num">${d.rooms}<small>camas</small></div><div class="bar"><i style="width:${d.pct}%"></i></div></div>`).join('');
 }
 const EV_META={
-  egreso:{c:'var(--egreso)',w:'var(--egreso-w)',t:'Egreso registrado',ic:'<path d="M16 17l5-5-5-5M21 12H9M13 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8"/>'},
+  egreso:{c:'var(--egreso)',w:'var(--egreso-w)',t:'Check out registrado',ic:'<path d="M16 17l5-5-5-5M21 12H9M13 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8"/>'},
   limpieza:{c:'var(--limpieza)',w:'var(--limpieza-w)',t:'Inicio de limpieza',ic:'<path d="M3 21l6-6M14 4l6 6-9 9-6-2-2-6 9-9z"/>'},
   lista:{c:'var(--lista)',w:'var(--lista-w)',t:'Cama lista',ic:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>'},
   control:{c:'var(--cemp)',w:'var(--cemp-wash)',t:'Control de habitación firmado',ic:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>'},
@@ -711,7 +744,7 @@ function sheetLimpieza(b){
   const eg=b.egresoAt; const hasClean=['limpieza','lista'].includes(b.state);
   const editable = (b.state==='egreso'||b.state==='limpieza');
   const tl=[
-    {tm:fmtClock(eg), ti:'Egreso del paciente', sub:'Admisión marca la cama libre', done:b.state!=='ocupada'},
+    {tm:fmtClock(eg), ti:'Check out del paciente', sub:'Admisión marca la cama libre', done:b.state!=='ocupada'},
     {tm:b.assigned?fmtClock(eg+rand(2,6)):'—', ti:'Asignada a mucama', sub:b.assigned||'Pendiente de asignación', done:!!b.assigned, pending:!b.assigned},
     {tm:hasClean?fmtClock(eg+rand(7,12)):'—', ti:'Inicio de limpieza', sub:CLEAN_LABEL[b.cleanType], done:hasClean, pending:!hasClean},
     {tm:b.state==='lista'?fmtClock(simMin-rand(1,6)):'—', ti:'Cama lista', sub:`Checklist ${b.progress}/${b.total} · ${b.assigned||'—'}`, done:b.state==='lista', pending:b.state!=='lista'},
@@ -796,12 +829,11 @@ function renderDrawerFoot(b){
     foot.querySelectorAll('[data-rc]').forEach(btn=> btn.onclick=()=>doRC(b, btn.dataset.rc));
     return;
   }
-  if(b.state==='ocupada') html=`<button class="btn btn-primary" data-act="egreso">Registrar egreso</button><button class="btn btn-ghost" data-act="mant">Fuera de servicio</button>`;
-  else if(b.state==='egreso') html=`<button class="btn btn-primary" data-act="start">Iniciar limpieza</button><button class="btn btn-ghost" data-act="mant">Fuera de servicio</button>`;
+  if(b.state==='ocupada') html=`<button class="btn btn-primary" data-act="egreso">Registrar check out</button>`;
+  else if(b.state==='egreso') html=`<button class="btn btn-primary" data-act="start">Iniciar limpieza</button>`;
   else if(b.state==='limpieza'){ const done=b.progress>=b.total;
-    html=`<button class="btn ${done?'btn-ok':'btn-primary'}" data-act="lista" ${done?'':'disabled style="opacity:.45;cursor:not-allowed"'}>${done?'Marcar cama lista':`Faltan ${b.total-b.progress} ítems`}</button><button class="btn btn-ghost" data-act="mant">Mantenim.</button>`; }
-  else if(b.state==='lista') html=`<button class="btn btn-primary" data-act="egreso">Registrar nuevo egreso</button><button class="btn btn-ghost" data-act="mant">Fuera de servicio</button>`;
-  else if(b.state==='mant') html=`<button class="btn btn-ok" data-act="reactivar">Volver a servicio</button>`;
+    html=`<button class="btn ${done?'btn-ok':'btn-primary'}" data-act="lista" ${done?'':'disabled style="opacity:.45;cursor:not-allowed"'}>${done?'Marcar cama lista':`Faltan ${b.total-b.progress} ítems del checklist`}</button>`; }
+  else if(b.state==='lista') html=`<button class="btn btn-primary" data-act="egreso">Registrar check out</button>`;
   const foot=document.getElementById('dr-foot'); foot.innerHTML=html;
   foot.querySelectorAll('[data-act]').forEach(btn=> btn.onclick=()=>doAct(b, btn.dataset.act));
 }
@@ -815,11 +847,10 @@ function doRC(b, act){
 function doAct(b, act){
   const isInt=b.kind==='uci'||b.kind==='uti';
   if(act==='egreso'){ b.state='egreso'; b.sinceMin=simMin; b.egresoAt=simMin; b.assigned=null; b.progress=0;
-    b.cleanType=isInt?(b.isolation?'ais':'uci'):'terminal'; b.total=CHECKLISTS[b.cleanType].length; pushLog('egreso',b); }
+    b.cleanType=isInt?(b.isolation?'ais':'uci'):'terminal'; b.total=CHECKLISTS[b.cleanType].length;
+    b.roomCheck={}; b.rcFinishedAt=null; b.rcBy=null; b.roomObs=''; pushLog('egreso',b); }
   else if(act==='start'){ b.state='limpieza'; b.sinceMin=simMin; if(!b.assigned)b.assigned=MUCAMAS[0]; pushLog('limpieza',b); }
   else if(act==='lista'){ if(b.progress>=b.total){ b.state='lista'; b.sinceMin=simMin; pushLog('lista',b); } }
-  else if(act==='mant'){ b.state='mant'; b.sinceMin=simMin; b.assigned=null; }
-  else if(act==='reactivar'){ b.state='lista'; b.sinceMin=simMin; }
   renderDrawer(); refreshAll();
 }
 
@@ -840,15 +871,25 @@ function tickClock(){
   if(currentView==='tablero'){ renderSectors(); renderSummary(); renderLegend(); renderAlerts(); }
 }
 function simulateStep(){
-  let b=pick(allBeds().filter(x=>x.state==='ocupada'));
-  if(b && Math.random()<.5){ const isUCI=b.kind==='uci'; b.state='egreso'; b.sinceMin=simMin; b.assigned=null; b.progress=0;
-    b.cleanType= isUCI?(b.isolation?'ais':'uci'): (Math.random()<.5?'terminal':'rutina'); b.total=CHECKLISTS[b.cleanType].length; b.egresoAt=simMin; b.urgent=Math.random()<.22; pushLog('egreso',b); }
-  b=pick(allBeds().filter(x=>x.state==='egreso'));
-  if(b){ if(!b.assigned)b.assigned=MUCAMAS[Math.floor(Math.random()*MUCAMAS.length)]; b.state='limpieza'; b.sinceMin=simMin; b.progress=1; pushLog('limpieza',b); }
-  b=pick(allBeds().filter(x=>x.state==='limpieza'));
-  if(b){ b.progress++; if(b.progress>=b.total){ b.state='lista'; b.sinceMin=simMin; pushLog('lista',b); } }
-  b=pick(allBeds().filter(x=>x.state==='lista'));
-  if(b && Math.random()<.3){ b.state='ocupada'; b.sinceMin=simMin; b.assigned=null; b.urgent=false; }
+  const beds=allBeds();
+  const isInt=b=>b.kind==='uci'||b.kind==='uti';
+  const pipeline = beds.filter(x=>x.state==='egreso'||x.state==='limpieza').length;
+  // nuevo check out solo si el pipeline no está saturado (mantiene distribución realista)
+  if(pipeline < 8){
+    let b=pick(beds.filter(x=>x.state==='ocupada'));
+    if(b && Math.random()<.55){ b.state='egreso'; b.sinceMin=simMin; b.assigned=null; b.progress=0;
+      b.cleanType= isInt(b)?(b.isolation?'ais':'uci'): (Math.random()<.5?'terminal':'rutina'); b.total=CHECKLISTS[b.cleanType].length;
+      b.egresoAt=simMin; b.urgent=Math.random()<.2; b.roomCheck={}; b.rcFinishedAt=null; b.rcBy=null; pushLog('egreso',b); }
+  }
+  // asignar + iniciar limpieza en un check out
+  let b=pick(beds.filter(x=>x.state==='egreso'));
+  if(b){ if(!b.assigned)b.assigned=MUCAMAS[Math.floor(Math.random()*MUCAMAS.length)]; b.state='limpieza'; b.sinceMin=simMin; b.progress=Math.max(1,b.progress); pushLog('limpieza',b); }
+  // avanzar limpiezas (rápido, para que no se acumulen) y dejarlas listas
+  beds.filter(x=>x.state==='limpieza').slice(0,3).forEach(x=>{ x.progress+=2; if(x.progress>=x.total){ x.state='lista'; x.sinceMin=simMin;
+    Object.entries(ROOM_CHECK).forEach(([g,items])=>items.forEach(it=> x.roomCheck[rcKey(g,it)]=true)); x.rcFinishedAt=simMin; x.rcBy=x.assigned; pushLog('lista',x); } });
+  // liberar una cama lista (nuevo ingreso)
+  let r=pick(beds.filter(x=>x.state==='lista'));
+  if(r && Math.random()<.5){ r.state='ocupada'; r.sinceMin=simMin; r.assigned=null; r.urgent=false; r.roomCheck={}; r.rcFinishedAt=null; r.rcBy=null; }
   refreshAll();
 }
 function refreshAll(){
